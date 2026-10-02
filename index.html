@@ -78,6 +78,7 @@
   </div>
   <div class="ctxl">
     <button data-k="lb" data-ctx="title">Рекорды</button>
+    <button data-k="help" data-ctx="title">Как играть</button>
     <button data-k="imp" data-ctx="board">Код друга</button>
     <button data-k="vision" data-ctx="board">Копир.</button>
     <button data-k="esc" data-ctx="play">Выход</button>
@@ -393,7 +394,7 @@ const MAP = {
   ArrowLeft:'left', KeyA:'left', ArrowRight:'right', KeyD:'right',
   ArrowUp:'up', KeyW:'up', ArrowDown:'down', KeyS:'down', Space:'jump',
   KeyX:'shoot', KeyZ:'purr', KeyC:'vision', KeyV:'vanish', Enter:'ok',
-  KeyM:'mute', Escape:'esc', Digit1:'n1', Digit2:'n2', Digit3:'n3', KeyL:'lb', KeyI:'imp'
+  KeyM:'mute', Escape:'esc', Digit1:'n1', Digit2:'n2', Digit3:'n3', KeyL:'lb', KeyI:'imp', KeyH:'help'
 };
 let down = {}, pressed = {};
 const textMode = () => S.mode === 'name' || S.mode === 'import';
@@ -1582,8 +1583,46 @@ function drawTitle(t) {
   txt('8-BIT ADVENTURE', 150, 46, '#f8d848', 8, 'center');
   txt('сказка по мотивам «Алисы в Стране Чудес» · ведущий клуба — Андрей', 150, 62, '#c8b0f0', 4.8, 'center');
   if ((t >> 5) % 2) txt(mobileMode ? '▶ КОСНИСЬ ЭКРАНА — начать ◀' : '▶ ENTER — начать игру ◀', 150, 168, '#fff8e8', 7, 'center');
-  txt(mobileMode ? 'кнопка «Рекорды» — таблица рекордов по времени' : 'L — таблица рекордов (рейтинг по времени)', 150, 179, '#58d8e8', 5, 'center');
+  txt(mobileMode ? 'кнопки «Как играть» и «Рекорды»' : 'H — как играть · L — таблица рекордов (рейтинг по времени)', 150, 179, '#58d8e8', 5, 'center');
   txt(mobileMode ? 'кнопки управления — на экране' : '← → идти · ПРОБЕЛ/↑ прыжок · X реплика · Z мурчание · C взгляд · V исчезнуть · M звук', 150, 189, '#a0a0b0', 4.2, 'center');
+}
+/* ---------- экран «Как играть» ---------- */
+function helpPages() {
+  return [
+    ['КАК ИГРАТЬ  1/2', [
+      ['Улыбка Чеширского кота разбилась на 5 кусочков и разлетелась по залам клуба. Собери их все и вернись к круглому столу. Чем быстрее — тем выше место в рейтинге.', '#fff8e8'],
+      ['', 0],
+      ['УПРАВЛЕНИЕ', '#f8d848'],
+      [mobileMode ? 'Кнопки на экране: стрелки, ПРЫЖОК, X (реплика), Z (мурчание), C (взгляд), V (исчезнуть). Лучше держать телефон горизонтально; экран касанием — «ОК».'
+                  : '← → — идти · ПРОБЕЛ или ↑ — прыжок · X — ироничная реплика · Z — мурчание · C — мудрый взгляд · V — исчезнуть · M — звук · Enter — подтвердить.', '#c8b0f0'],
+      ['', 0],
+      ['ВРАГИ-ПРОБЛЕМЫ', '#f8d848'],
+      ['Реплика (X) замораживает врага, прыжок сверху добивает его. Незамороженный враг отнимает вещи или зубы улыбки.', '#c8b0f0']
+    ]],
+    ['ЗАЛЫ И СОВЕТЫ  2/2', [
+      ['1 Бар — угости 5 гостей кофе и конфетой, убери всех врагов. Упал в яму — всё сначала.', '#fff8e8'],
+      ['2 Вторник — 4 станции навыков. Появляется двойной прыжок.', '#fff8e8'],
+      ['3 Среда — расслабь 6 гостей мурчанием (Z).', '#fff8e8'],
+      ['4 Четверг, бизнес-мастермайнд — шестерёнки строго по порядку.', '#fff8e8'],
+      ['5 Пятница — мудрый взгляд (C), 3 причины, 4 зеркала, 2 разговора.', '#fff8e8'],
+      ['', 0],
+      ['СОВЕТЫ', '#f8d848'],
+      ['Зуб лечит улыбку. Не жми X в бою с Двойником: сарказм — это защита. Секундомер идёт всю игру, падения и ошибки — это время. После финала впиши имя в таблицу рекордов и отправь друзьям код.', '#c8b0f0']
+    ]]
+  ];
+}
+function drawHelp(t) {
+  sky('#1b1236', '#3a1c5a');
+  const pg = helpPages()[Math.min(S.hp, 1)];
+  txt(pg[0], 150, 8, '#f07ab8', 10, 'center');
+  panel(14, 26, 272, 150, '#1b1236');
+  let y = 31;
+  pg[1].forEach(([s, col]) => {
+    if (!s) { y += 4; return; }
+    wrap(s, 80).forEach(l => { txt(l, 21, y, col, 5, 'left'); y += 7.2; });
+  });
+  if ((t >> 5) % 2) txt((mobileMode ? 'Коснись экрана — ' : 'Enter — ') + (S.hp >= 1 ? 'закрыть' : 'дальше'), 150, 183, '#fff8e8', 6, 'center');
+  if (!mobileMode) txt('Esc — назад', 8, 190, '#585868', 4.4, 'left');
 }
 function drawHub(t) {
   sky('#2a1533', '#4a2a3a');
@@ -1809,9 +1848,15 @@ function step() {
     case 'title':
       mTheme = 'title';
       if (pressed.lb) { S.mode = 'board'; S.fromTitle = true; S.last = null; S.code = ''; S.msg = ''; break; }
+      if (pressed.help) { S.mode = 'help'; S.hp = 0; break; }
       if (okPressed()) { resetRun(); S.mode = 'prologue'; dlg = {lines:PROLOGUE.map(l => l), i:0, cb:() => { dlg = null; goHub(); }, sel:0, shown:0}; }
       break;
     case 'prologue': if (dlg) updateDialog(); break;
+    case 'help':                                   // экран «Как играть»: 2 страницы
+      if (pressed.esc) S.mode = 'title';
+      else if (okPressed() || pressed.right) { if (++S.hp >= 2) S.mode = 'title'; }
+      else if (pressed.left && S.hp > 0) S.hp--;
+      break;
     case 'hub':
       if (pressed.left) { S.sel = Math.max(0, S.sel - 1); beep(500, 0.04); }
       if (pressed.right) { S.sel = Math.min(4, S.sel + 1); beep(500, 0.04); }
@@ -1844,6 +1889,7 @@ function render() {
   const t = S.t;
   switch (S.mode) {
     case 'title': drawTitle(t); break;
+    case 'help': drawHelp(t); break;
     case 'prologue': drawTable(false, t); if (dlg) drawDialog(); break;
     case 'hub': drawHub(t); break;
     case 'card': drawCard(t); break;
